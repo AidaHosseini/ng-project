@@ -1,0 +1,18 @@
+# Ignore database files
+data/
+transactions/
+logs/
+import/
+run/
+metrics/
+licenses/
+plugins/
+
+# Ignore Neo4j Desktop settings
+.neo4j/
+.neo4jDesktop/
+
+# Ignore temporary files
+*.log
+*.db
+*.pid
