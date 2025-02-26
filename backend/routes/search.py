@@ -12,7 +12,7 @@ def search():
     query = """
     MATCH (i:N_ICD)-[:WIRD_BEHANDELT_IN]->(c:Clinic)
     WHERE c.city = $city AND i.name = $icd_code
-    RETURN c.name AS clinic_name, c.city AS city, c.latitude AS latitude, c.longitude AS longitude
+    RETURN c.name AS clinic_name, c.city AS city,c.latitude AS latitude, c.longitude AS longitude, c.id AS ID
     """
     
     results = neo4j.run_query(query, {"city": city, "icd_code": icd_code})
@@ -21,6 +21,7 @@ def search():
         {
             "clinic_name": record["clinic_name"],
             "city": record["city"],
+            "id": record["ID"],  
             "latitude": record["latitude"],  
             "longitude": record["longitude"]
         }

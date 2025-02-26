@@ -22,10 +22,36 @@ const SearchForm = ({ setGraphData }) => {
             console.error("❌ API Error:", error);
         }
     };
+    const styles = {
+        form: {
+            marginBottom: "15px", // Adds space between the form and the map
+        }
+    };
+    
+
+    // return (
+    //     <div>
+    //         <form onSubmit={handleSearch}>
+    //             <input
+    //                 type="text"
+    //                 placeholder="City"
+    //                 value={city}
+    //                 onChange={(e) => setCity(e.target.value)}
+    //             />
+    //             <input
+    //                 type="text"
+    //                 placeholder="ICD Code"
+    //                 value={icdCode}
+    //                 onChange={(e) => setIcdCode(e.target.value)}
+    //             />
+    //             <button type="submit">Search</button>
+    //         </form>
+    //     </div>
+    // );
 
     return (
         <div>
-            <form onSubmit={handleSearch}>
+            <form onSubmit={handleSearch} style={styles.form}>
                 <input
                     type="text"
                     placeholder="City"
@@ -42,6 +68,7 @@ const SearchForm = ({ setGraphData }) => {
             </form>
         </div>
     );
+    
 };
 
 export default SearchForm;

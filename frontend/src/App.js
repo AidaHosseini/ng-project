@@ -1,11 +1,18 @@
 import React from "react";
-import GraphView from "./components/GraphView";
+import { LocationProvider } from "./components/LocationContext";
+import Analystics from "./components/Analystics";
+import Map from "./components/map"; 
 
 function App() {
   return (
     <div>
-      <h1>Healthcare Data Visualization with GraphXR</h1>
-      <GraphView />
+      <h1>Welcome!</h1>
+      {/* <GraphView /> */}
+         
+      <LocationProvider>
+            <Map />
+            <Analystics />
+        </LocationProvider>
     </div>
   );
 }
