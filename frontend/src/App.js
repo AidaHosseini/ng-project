@@ -6,7 +6,7 @@ import Map from "./components/map";
 function App() {
   return (
     <div>
-      <h1>Welcome!</h1>
+      <h1> HerzlHich willkommen!</h1>
       {/* <GraphView /> */}
          
       <LocationProvider>
