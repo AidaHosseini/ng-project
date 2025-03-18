@@ -78,68 +78,7 @@ def search():
         where_clauses.append("i.name = $icd_code")
         params["icd_code"] = icd_code
 
-
-    # # if focus:
-    # #     where_clauses.append("i.focus IN $focus")
-    # #     params["focus"] = focus
-    # # if providers:
-    # #     where_clauses.append("c.provider IN $providers")
-    # #     params["providers"] = providers
-    # # if radius:
-    # #     where_clauses.append("c.radius <= $radius")  # Ensure radius is a single value
-    # #     params["radius"] = int(radius)
-    # # if cooperation:
-    # #     where_clauses.append("c.cooperation = true")
-    # # if mvz:
-    # #     where_clauses.append("c.mvz = true")   
-    # # if asv:
-    # #     where_clauses.append("c.asv = true")
-    # # if arzt:
-    # #     where_clauses.append("c.arzt = true")        
-    # # if clinic:
-    # #     where_clauses.append("c.clinic = true")
-
-    # where_clause = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
-
-    # query = f"""
-    # MATCH (i:N_ICD)-[:WIRD_BEHANDELT_IN]->(c:Clinic)
-    # {where_clause}
-    # RETURN 
-    #     CASE WHEN $clinic = true THEN c.id ELSE NULL END AS clinic_id,
-    #     CASE WHEN $clinic = true THEN c.name ELSE NULL END AS clinic_name,
-    #     CASE WHEN $clinic = true THEN c.identity ELSE NULL END AS clinic_identity,
-    #     CASE WHEN $clinic = true THEN c.city ELSE NULL END AS city,
-    #     CASE WHEN $clinic = true THEN c.latitude ELSE NULL END AS latitude,
-    #     CASE WHEN $clinic = true THEN c.longitude ELSE NULL END AS longitude,
-    #     CASE WHEN $clinic = true THEN c.number_of_bed ELSE NULL END AS number_of_beds,
-    #     i.name AS icd_name, i.fallzahl AS icd_fallzahl
-    # """
-        
     
-
-    # params["clinic"] = clinic  # Pass the clinic flag to the query
-
-
-
-    # results = neo4j.run_query(query, params)
-
-    # formatted_results = [
-    #     {
-    #         "clinic_id": record["clinic_id"],
-    #         "clinic_name": record["clinic_name"],
-    #         "clinic_identity": record["clinic_identity"],
-    #         "city": record["city"],
-    #         "latitude": record["latitude"],  
-    #         "longitude": record["longitude"],
-    #         "number_of_beds": record["number_of_beds"],
-    #         "icd_name": record["icd_name"],
-    #         "icd_fallzahl": record["icd_fallzahl"]
-    #     }
-    #     for record in results
-    # ]
-
-    # return json.dumps(formatted_results, ensure_ascii=False, indent=4), 200, {'Content-Type': 'application/json; charset=utf-8'}
-
     # Dynamically create MATCH statements based on selected provider types
     match_statements = []
     if clinic == True:
@@ -180,7 +119,9 @@ def search():
             "COALESCE(c.address, 'Unknown Address') AS clinic_address",  # Ensure address is never null
             "c.latitude AS clinic_latitude",
             "c.longitude AS clinic_longitude",
-            "c.number_of_bed AS clinic_number_of_beds"
+            "c.number_of_bed AS clinic_number_of_beds",
+            "c.cooperation AS clinic_cooperation",
+            "c.chefarzt AS clinic_chefarzt"
         ])
     if mvz:
         return_statements.extend([

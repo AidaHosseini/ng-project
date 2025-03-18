@@ -1,6 +1,11 @@
-body {
+
+   body {
     margin: 0;
+    margin-left: 10px;
     font-family: Arial, sans-serif;
-    background-color: #f5f5f5;
+    background-color: #c3e5eb96;
   }
-  
+
+  .header {
+    text-align: center;
+  }
