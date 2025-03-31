@@ -14,8 +14,6 @@ The application allows users to:
 
 ## 🏗 Project Structure
 
-## 🏗 Project Structure
-
 healthcare-graph-project/
 ├── frontend/                        # React frontend
 │   ├── public/                      # Static assets (index.html, favicon)
