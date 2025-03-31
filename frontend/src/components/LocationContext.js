@@ -1,20 +1,26 @@
 import React, { createContext, useContext, useState } from "react";
 
-// Create context
 const LocationContext = createContext();
 
-// Provider component
 export const LocationProvider = ({ children }) => {
     const [allLocations, setAllLocations] = useState([]);
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const [userLocation, setUserLocation] = useState(null); // ✅ Add this
 
     return (
-        <LocationContext.Provider value={{ allLocations, setAllLocations }}>
+        <LocationContext.Provider value={{ 
+            allLocations, 
+            setAllLocations, 
+            selectedLocation, 
+            setSelectedLocation,
+            userLocation,
+            setUserLocation // ✅ Include setter as well
+        }}>
             {children}
         </LocationContext.Provider>
     );
 };
 
-// Custom hook to use context
 export const useLocation = () => {
     return useContext(LocationContext);
 };

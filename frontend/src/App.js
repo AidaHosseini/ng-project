@@ -1,7 +1,7 @@
 import React from "react";
 import { LocationProvider } from "./components/LocationContext";
-import Analystics from "./components/Analystics";
-import Map from "./components/map"; 
+import Analytics from "./components/Analytics";
+import Map from "./components/Map"; 
 
 function App() {
   return (
@@ -38,7 +38,7 @@ function App() {
 
       <LocationProvider>
         <Map />
-        <Analystics />
+        <Analytics />
       </LocationProvider>
     </div>
   );

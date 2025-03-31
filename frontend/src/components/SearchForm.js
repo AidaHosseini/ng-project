@@ -1,77 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { useLocation } from "./LocationContext"; // ✅ Add this
 
 const SearchForm = ({ setGraphData }) => {
+    // ✅ Import context values at the top of the component
+    const { allLocations, selectedLocation, setSelectedLocation, userLocation } = useLocation();
     // State for search fields
     const [city, setCity] = useState("");
     const [icdCode, setIcdCode] = useState("");
-    const [radius, setRadius] = useState(30); // Default 30 km
-
-    // State for checkboxes (filters)
-    const [focus, setFocus] = useState({
-        onkologen: false,
-        neurologen: false,
-    });
-    const [providers, setProviders] = useState({
-        clinics: false,
-        mvz: false,
-        asv: false,
-        niedergelasseneAertze: false,
-    });
+    const [radius, setRadius] = useState(30);
+    const [focus, setFocus] = useState({ onkologen: false, neurologen: false });
+    const [providers, setProviders] = useState({ clinics: false, mvz: false, asv: false, niedergelasseneAertze: false });
     const [cooperation, setCooperation] = useState(false);
 
-    // const handleSearch = async (e) => {
-    //     e.preventDefault();
-    //     console.log("🔵 Search Button Clicked");
-    
-    //     try {
-    //         console.log(`🔵 Sending request to: http://127.0.0.1:5000/search?city=${city}&icd_code=${icdCode}`);
-            
-    //         const response = await axios.get("http://127.0.0.1:5000/search", {
-    //             params: { city, icd_code: icdCode, radius, focus, providers, cooperation },
-    //         });
-    
-    //         console.log("✅ API Response Received:", response.data);
-    
-    //         if (response.data.length > 0) {
-    //             setGraphData(response.data);  // 🔴 Ensure GraphData is updated
-    //         } else {
-    //             console.warn("⚠️ No data returned from API");
-    //         }
-    //     } catch (error) {
-    //         console.error("❌ API Error:", error);
-    //     }
+    // Handle logic to disable Schwerpunkt if ICD is entered
+    // eslint-disable-next-line no-undef
+    useEffect(() => {
+        if (icdCode.trim() !== "") {
+            setFocus({ onkologen: false, neurologen: false });
+        }
+    }, [icdCode]);
+
+    //🟢 Handle search form submission
     const handleSearch = async (e) => {
         e.preventDefault();
         console.log("🔵 Search Button Clicked");
-    
+ 
         try {
-            console.log(`🔵 Sending request to: http://127.0.0.1:5000/search`);
-    
-            const response = await axios.get("http://127.0.0.1:5000/search", {
-                params: {
-                    city,
-                    icd_code: icdCode,
-                    radius,
-                    onkologen: focus.onkologen,
-                    neurologen: focus.neurologen,
-                    clinic: providers.clinics,
-                    mvz: providers.mvz,
-                    asv: providers.asv,
-                    cooperation
-                }
-            });
-    
+            const params = {
+                city,
+                icd_code: icdCode,
+                radius,
+                onkologen: focus.onkologen,
+                neurologen: focus.neurologen,
+                clinic: providers.clinics,
+                mvz: providers.mvz,
+                asv: providers.asv,
+                cooperation,
+            };
+
+            if (userLocation) {
+                params.lat = userLocation.latitude;
+                params.lon = userLocation.longitude;
+            }
+
+            const response = await axios.get("http://127.0.0.1:5000/search", { params });
             console.log("✅ API Response Received:", response.data);
+
+            const combinedResults = [
+                ...(response.data.clinics || []),
+                ...(response.data.mvz || []),
+                ...(response.data.neurologen || []),
+                ...(response.data.onkologen || []),
+                ...(response.data.asv || []),
+                ...(response.data.niedergelasseneAertze || []),
+            ];
+            const validResults = combinedResults.filter(loc =>
+                (loc.clinic_latitude && loc.clinic_longitude) ||
+                (loc.mvz_latitude && loc.mvz_longitude) ||
+                (loc.asv_latitude && loc.asv_longitude) ||
+                (loc.niedergelassene_latitude && loc.niedergelassene_longitude) ||
+                (loc.neurologe_latitude && loc.neurologe_longitude) ||
+                (loc.onkologe_latitude && loc.onkologe_longitude)
+            );
+
     
-            // 🛑 Filter out invalid locations
-            const validResults = response.data.filter(loc => (loc.clinic_latitude && loc.clinic_longitude) ||
-            (loc.mvz_latitude && loc.mvz_longitude) ||
-            (loc.asv_latitude && loc.asv_longitude) ||  // Fixed: loc.asv.longitude → loc.asv_longitude
-            (loc.niedergelassene_latitude && loc.niedergelassene_longitude) ||
-            (loc.neurologe_latitude && loc.neurologe_longitude) ||
-            (loc.onkologe_latitude && loc.onkologe_longitude)
-        );
+        //     // 🛑 Filter out invalid locations
+        //     const validResults = response.data.filter(loc => (loc.clinic_latitude && loc.clinic_longitude) ||
+        //     (loc.mvz_latitude && loc.mvz_longitude) ||
+        //     (loc.asv_latitude && loc.asv_longitude) ||  // Fixed: loc.asv.longitude → loc.asv_longitude
+        //     (loc.niedergelassene_latitude && loc.niedergelassene_longitude) ||
+        //     (loc.neurologe_latitude && loc.neurologe_longitude) ||
+        //     (loc.onkologe_latitude && loc.onkologe_longitude)
+        // );
         
             if (validResults.length > 0) {
                 setGraphData(validResults);  // ✅ Only use valid locations
@@ -83,6 +84,8 @@ const SearchForm = ({ setGraphData }) => {
             console.error("❌ API Error:", error);
         }
     };
+    
+    
     
 
     return (
@@ -99,7 +102,8 @@ const SearchForm = ({ setGraphData }) => {
                             value={city}
                             onChange={(e) => setCity(e.target.value)}
                             style={styles.input}
-                            required= {true}
+                            // required= {true}
+                            required={!userLocation} // only require city if no user location
                         />
                         <input
                             type="text"
@@ -139,8 +143,9 @@ const SearchForm = ({ setGraphData }) => {
                             <label>
                                 <input
                                     type="checkbox"
-                                    checked={focus.oncology}
+                                    checked={focus.onkologen}
                                     onChange={() => setFocus({ onkologen: !focus.onkologen, neurologen: false })}
+                                    // disabled={icdCode.trim() !== ""}
                                 />
                                 Onkologie
                             </label>
@@ -151,8 +156,9 @@ const SearchForm = ({ setGraphData }) => {
                             <label>
                                 <input
                                     type="checkbox"
-                                    checked={focus.neurology}
+                                    checked={focus.neurologen}
                                     onChange={() => setFocus({ neurologen: !focus.neurologen, onkologen: false })}
+                                    // disabled={icdCode.trim() !== ""}
                                 />
                                 Neurologie
                             </label>
