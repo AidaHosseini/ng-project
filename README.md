@@ -14,13 +14,34 @@ The application allows users to:
 
 ## 🏗 Project Structure
 
-healthcare-graph-project/ │ ├── backend/ # Flask API with Neo4j │ ├── app.py # Flask app entry point │ 
-├── routes/ │ │ └── search.py # API routes │ 
-├── db/ │ │ 
-└── neo4j_connector.py # Neo4j connection │ 
-└── requirements.txt # Python dependencies │ ├── frontend/ # React frontend │ ├── public/ # Static assets │ ├── src/ │ │ ├── components/ │ │ │ ├── SearchForm.js # Input form for search │ │ │ ├── Map.js # Leaflet map with providers │ │ │ ├── Analytics.js # ICD stats, routes, summaries │ │ │ └── LocationContext.js # Shared location context │ │ ├── App.js │ │ └── index.js │ └── package.json │ ├── .gitignore └── README.md
+## 🏗 Project Structure
 
-
+healthcare-graph-project/
+├── frontend/                        # React frontend
+│   ├── public/                      # Static assets (index.html, favicon)
+│   ├── src/                         # React source code
+│   │   ├── components/              # Reusable UI components
+│   │   │   ├── SearchForm.js        # Search form for ICD, city, radius, provider(Clinic, MVZ, ASV, Niedergelassene Ärzte), Focus(Onkologen, Neurologen), Coorperation
+│   │   │   ├── Map.js               # Leaflet map showing providers
+│   │   │   ├── Analytics.js         # ICD stats, provider info, distances
+│   │   │   └── LocationContext.js   # Context for shared location state
+│   │   ├── App.js                   # Root component
+│   │   └── index.js                 # React entry point
+│   ├── package.json                 # Frontend dependencies
+│   └── README.md                    # Frontend-specific documentation
+│
+├── backend/                         # Flask backend
+│   ├── app.py                       # Main Flask application
+│   ├── routes/
+│   │   └── search.py                # API logic for querying Neo4j
+│   ├── db/
+│   │   └── neo4j_connector.py       # Neo4j connection logic
+│   ├── requirements.txt             # Python dependencies
+│   └── README.md                    # Backend-specific documentation
+│
+├── .gitignore                       # Files to ignore in Git
+├── README.md                        # 📘 Main project documentation
+└── docs/                            # Optional: add project notes, diagrams
 
 
 
