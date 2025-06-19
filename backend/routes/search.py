@@ -1,507 +1,241 @@
-# from flask import Blueprint, request, jsonify
-# from db.neo4j_connector import neo4j
-# import json 
-
-# # Create a Blueprint for the search endpoint
-# search_bp = Blueprint("search", __name__)
-
-# @search_bp.route("/", methods=["GET"])
-# def search():
-#     """
-#     Handles API requests for searching medical providers (Clinics, MVZ, Neurologists, Oncologists)
-#     based on city, ICD codes, and provider types.
-#     """
-
-#     # Extracting query parameters from the request
-#     city = request.args.get("city", "").strip() # City name
-#     icd_code = request.args.get("icd_code", "").strip() # ICD code
-#     radius = request.args.get("radius", "30")  # Default search radius (not implemented yet)
-
-#     # Boolean flags to determine which provider types should be included in the search
-#     onkologen = request.args.get("onkologen", "false") == "true"
-#     neurologen = request.args.get("neurologen", "false") == "true"
-#     providers = request.args.getlist("providers")  # List of selected provider types
-#     cooperation = request.args.get("cooperation", "false") == "true"
-#     mvz = request.args.get("mvz", "false") == "true"
-#     asv = request.args.get("asv", "false") == "true"    
-#     #arzt = request.args.get("arzt", "false") == "true"
-#     clinic = request.args.get("clinic", "false") == "true"
-
-#     print(f"🔵 API Request: City={city}, ICD={icd_code}, Radius={radius}, Providers: Clinic={clinic}, MVZ={mvz}, ASV={asv}, Neurologen={neurologen}, Onkologen={onkologen}, Cooperation={cooperation}")
-#     if city is None or city == "":
-#         return jsonify({"error": "Please enter your city"}), 400
-    
-
-#  # ✅ Rule 1: Only ONE from (Neurologen, Onkologen) can be selected
-#     if neurologen == True and onkologen == True :
-#         return jsonify({"error": "You can select either Neurologen OR Onkologen, not both"}), 400
-
-#     # ✅ Rule 2: Clinic, MVZ, and ASV can be selected together
-#     provider_selected = any([clinic, mvz, asv])
-
-#     # # ✅ Rule 3: Ensure at least one selection from Neurologen/Onkologen or Clinic/MVZ/ASV
-#     # if not (neurologen or onkologen or provider_selected):
-#     #     return jsonify({"error": "Please select at least one provider type"}), 400
-
-    
-#     # If no provider type is selected, default to searching for clinics
-#     if mvz==False and asv==False and clinic==False and onkologen==False and neurologen==False:
-#         clinic = True
-#         print("clinic&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&", clinic)
-#         # print("🔴 Error: No provider type selected")
-#         # return jsonify({"error": "No provider type selected"}), 400
-
-
-#     # Initialize query filters and parameters
-#     where_clauses = []
-#     params = {}
-
-#     # Apply city filter if provided
-#     if city and city is not None:
-#         if neurologen and neurologen == True:
-#             where_clauses.append("n.city = $city")
-#         elif onkologen and onkologen == True:
-#             where_clauses.append("o.city = $city")
-#         elif mvz and mvz == True:
-#             where_clauses.append("m.city = $city")
-        
-#         # elif asv and asv == True:
-#         #     where_clauses.append("a.city = $city")
-#         else:
-#             where_clauses.append("c.city = $city")
-#         params["city"] = city
-
-
-#     # Apply ICD code filter if provided
-#     if icd_code and icd_code is not None:
-#         print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&", icd_code)
-#         where_clauses.append("i.name = $icd_code")
-#         params["icd_code"] = icd_code
-
-    
-#     # Dynamically create MATCH statements based on selected provider types
-#     match_statements = []
-#     if clinic == True:
-#         match_statements.append("MATCH (i:ICD)-[:WIRD_BEHANDELT_IN]->(c:Clinic)")
-        
-#     if mvz == True:
-#         match_statements.append("MATCH (i:ICD)-[:WIRD_BEHANDELT_IN]->(m:MVZ)")
-#     if neurologen == True:
-#         match_statements.append("MATCH (i:ICD)-[:WIRD_BEHANDELT_IN]->(n:Neurologen)")
-#     if onkologen == True: 
-#         match_statements.append("MATCH (i:ICD)-[:WIRD_BEHANDELT_IN]->(o:Onkologen)")
-#     # if asv ==  True:
-#     #     match_statements.append("MATCH (i:ICD)-[:WIRD_BEHANDELT_IN]->(m:MVZ)")
-
-#     # Combine match statements into a single Cypher query section
-#     match_clause = "\n".join(match_statements)
-
-#     # If filters exist, construct a WHERE clause
-#     where_clause = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
-
-#     # Dynamically build the RETURN statement for selected provider types
-#     return_statements = []   
-    
-
-    
-#     if icd_code and icd_code is not None:
-#         print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&1234455")
-#         return_statements.extend([
-#          "i.name AS icd_name",  # Always return ICD name
-#          "i.fallzahl AS icd_fallzahl"  # Always return ICD case count
-#      ])
-
-#     if clinic:
-#         return_statements.extend([
-#             "c.name AS clinic_name",
-#             "c.identity AS clinic_identity",
-#             "c.city AS clinic_city",
-#             "COALESCE(c.address, 'Unknown Address') AS clinic_address",  # Ensure address is never null
-#             "c.latitude AS clinic_latitude",
-#             "c.longitude AS clinic_longitude",
-#             "c.number_of_bed AS clinic_number_of_beds",
-#             "c.cooperation AS clinic_cooperation",
-#             "c.chefarzt AS clinic_chefarzt"
-#         ])
-#     if mvz:
-#         return_statements.extend([
-#             "m.name AS mvz_name",
-#             "m.city AS mvz_city",
-#             "COALESCE(m.address, 'Unknown Address') AS mvz_address",
-#             "m.schwerpunkte AS mvz_schwerpunkte",
-#             "m.latitude AS mvz_latitude",
-#             "m.longitude AS mvz_longitude"
-#         ])
-#     if neurologen:
-#         return_statements.extend([
-#             "n.name AS neurologe_name",
-#             "n.city AS neurologe_city",
-#             "COALESCE(n.address, 'Unknown Address') AS neurologe_address",
-#             "n.schwerpunkte AS neurologe_schwerpunkte",
-#             "n.latitude AS neurologe_latitude",
-#             "n.longitude AS neurologe_longitude"
-#         ])
-#     if onkologen:
-#         return_statements.extend([
-#             "o.name AS onkologe_name",
-#             "o.city AS onkologe_city",
-#             "COALESCE(o.address, 'Unknown Address') AS onkologe_address",
-#             "o.schwerpunkte AS onkologe_schwerpunkte",
-#             "o.latitude AS onkologe_latitude",
-#             "o.longitude AS onkologe_longitude"
-#         ])
-
-#     # Combine the RETURN statements
-#     return_clause = "RETURN " + ", ".join(return_statements)
-
-#     # Final Query Assembly
-#     query = f"""
-#     {match_clause}
-#     {where_clause}
-#     {return_clause}
-#     """
-
-#     # Log the generated query
-#     print(f"🔵 Generated Query:\n{query}")
-
-#     # Execute the Neo4j query with parameters
-#     results = neo4j.run_query(query, params)
-
-#     # Format results into a JSON-friendly structure
-#     formatted_results = []
-#     for record in results:
-#         entry ={}
-#         if icd_code and icd_code is not None:
-#             entry.update ({
-#                  "icd_name": record.get("icd_name"),
-#                  "icd_fallzahl": record.get("icd_fallzahl")
-#             })
-#         if clinic:
-#             entry.update({
-#                 #"clinic_id": record.get("clinic_identity"),
-#                 "clinic_name": record.get("clinic_name"),
-#                 "clinic_identity": record.get("clinic_identity"),
-#                 "clinic_city": record.get("clinic_city"),
-#                 "clinic_address": record.get("clinic_address"),
-#                 "clinic_latitude": record.get("clinic_latitude"),
-#                 "clinic_longitude": record.get("clinic_longitude"),
-#                 "clinic_number_of_beds": record.get("clinic_number_of_beds")
-#             })
-#         if mvz:
-#             entry.update({
-#                 "mvz_name": record.get("mvz_name"),
-#                 "mvz_city": record.get("mvz_city"),
-#                 "mvz_address": record.get("mvz_address"),
-#                 "mvz_schwerpunkte": record.get("mvz_schwerpunkte"),
-#                 "mvz_latitude": record.get("mvz_latitude"),
-#                 "mvz_longitude": record.get("mvz_longitude")
-#             })
-#         if neurologen:
-#             entry.update({
-#                 "neurologe_name": record.get("neurologe_name"),
-#                 "neurologe_city": record.get("neurologe_city"),
-#                 "neurologe_address": record.get("neurologe_address"),
-#                 "neurologe_schwerpunkte": record.get("neurologe_schwerpunkte"),
-#                 "neurologe_latitude": record.get("neurologe_latitude"),
-#                 "neurologe_longitude": record.get("neurologe_longitude")
-#             })
-#         if onkologen:
-#             entry.update({
-#                 "onkologe_name": record.get("onkologe_name"),
-#                 "onkologe_city": record.get("onkologe_city"),
-#                 "onkologe_address": record.get("onkologe_address"),
-#                 "onkologe_schwerpunkte": record.get("onkologe_schwerpunkte"),
-#                 "onkologe_latitude": record.get("onkologe_latitude"),
-#                 "onkologe_longitude": record.get("onkologe_longitude")
-#             })
-#         formatted_results.append(entry)
-
-#     # Return JSON response
-#     return json.dumps(formatted_results, ensure_ascii=False, indent=4), 200, {'Content-Type': 'application/json; charset=utf-8'}
-
-
+# ✅ Refactored search.py without UNION ALL
+import os
+import json
+import math
 from flask import Blueprint, request, jsonify
 from db.neo4j_connector import neo4j
 
+# Load city coordinates
+# Define the path to the city coordinates JSON file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Define the path to the city coordinates JSON file
+CITY_COORDS_PATH = os.path.join(BASE_DIR, '..', 'data', 'city_coords.json')
+
+# Load the city coordinates from the JSON file
+with open(CITY_COORDS_PATH, 'r', encoding='utf-8') as f:
+    city_coords = json.load(f)
+
+# Load ICD Names
+# Define the path to the ICD names JSON file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Define the path to the ICD names JSON file
+ICD_NAMES_PATH = os.path.join(BASE_DIR, '..', 'data', 'icd_names.json')
+
+# Load the ICD names from the JSON file
+with open(ICD_NAMES_PATH, 'r', encoding='utf-8') as f:
+    icd_names = json.load(f)
+
+
 search_bp = Blueprint("search", __name__)
 
-@search_bp.route("/", methods=["GET"])
-def search():
-    city = request.args.get("city", "").strip()
-    icd_code = request.args.get("icd_code", "").strip()
-    radius = request.args.get("radius", "30")
 
-    # Provider type selections
+def haversine_distance(lat1, lon1, lat2, lon2):
+    R = 6371.0
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi / 2.0)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+def calculate_within_radius(center, radius_km, locations):
+    lat1, lon1 = float(center[0]), float(center[1])
+    result = []
+    for loc in locations:
+        lat2 = loc.get("lat")
+        lon2 = loc.get("lon")
+        if lat2 is None or lon2 is None:
+            continue
+        try:
+            lat2 = float(lat2)
+            lon2 = float(lon2)
+        except ValueError:
+            continue
+        dist = haversine_distance(lat1, lon1, lat2, lon2)
+        if dist <= radius_km:
+            loc["distance_km"] = round(dist, 2)
+            result.append(loc)
+    return result
+
+
+def run_query_if_enabled(label, query, enabled):
+    if enabled:
+        result = neo4j.run_query(query)
+        return [record.data() for record in result]
+    return []
+
+# Search endpoint
+# This endpoint retrieves provider locations based on various filters and a specified radius around a city.
+@search_bp.route("/A", methods=["GET"])
+def get_provider_latlons():
+    # Input
     clinic = request.args.get("clinic", "false") == "true"
     mvz = request.args.get("mvz", "false") == "true"
-    onkologen = request.args.get("onkologen", "false") == "true"
-    neurologen = request.args.get("neurologen", "false") == "true"
+    onkologie = request.args.get("onkologie", "false") == "true"
+    neurologie = request.args.get("neurologie", "false") == "true"
     asv = request.args.get("asv", "false") == "true"
+    niedergelasseneArzt = request.args.get("niedergelasseneArzt", "false") == "true"
     cooperation = request.args.get("cooperation", "false") == "true"
+    
+    city = request.args.get("city", "").lower()
+    radius = float(request.args.get("radius", 20))
+    center = city_coords.get(city)
+    if not center:
+        return jsonify({"error": "Unknown city"}), 400
+    
+    focus = [] # List to hold specialties(onkologie, neurologie)
+    if onkologie:
+        focus.append("Onkologie")
+    if neurologie:
+        focus.append("Neurologie")
 
-    print(f"🔵 API Request: City={city}, ICD={icd_code}, Radius={radius}, Providers: Clinic={clinic}, MVZ={mvz}, ASV={asv}, Neurologen={neurologen}, Onkologen={onkologen}, Cooperation={cooperation}")
+    formatted_focus = ", ".join([f'"{f}"' for f in focus])
+    specialty_filter = f"AND ANY(sp IN p.specialty WHERE sp IN [{formatted_focus}])" if focus else ""
 
-    if not city:
-        return jsonify({"error": "Please enter your city"}), 400
+    all_locations = []
 
-    if neurologen and onkologen:
-        return jsonify({"error": "You can select either Neurologen OR Onkologen, not both"}), 400
-
-    if not any([clinic, mvz, asv, neurologen, onkologen]):
-        clinic = True  # default fallback
-
-    results = {
-        "clinics": [],
-        "mvz": [],
-        "neurologen": [],
-        "onkologen": [],
-        "asv": [],
-        "icd": {}
-    }
-
-    # Query Clinics 
-    # MATCH (i:ICD {name: $icd_code})-[:WIRD_BEHANDELT_IN]->(c:Clinic)
+    # Individual queries
     if clinic:
-        clinic_query = """
-        MATCH (i:ICD)-[:WIRD_BEHANDELT_IN]->(c:Clinic)
-        """
-        clinic_query += """    
-        WHERE toLower(trim(c.city)) = toLower(trim($city))
-        """
-        if icd_code:
-            clinic_query += """
-            AND i.name = $icd_code
-            """
+        clinic_query = f'''
+        MATCH (p:Clinic)-[:HAS_LOCATION]->(l:Location)
+        WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL
+        {specialty_filter}
 
-        clinic_query += """
-               RETURN DISTINCT c.name AS clinic_name,
-                        c.identity AS clinic_identity,
-                        c.city AS clinic_city,
-                        COALESCE(c.address, 'Unknown Address') AS clinic_address,
-                        c.latitude AS clinic_latitude,
-                        c.longitude AS clinic_longitude,
-                        c.number_of_bed AS clinic_number_of_beds
+        OPTIONAL MATCH (icd1:E_ICD)-[r1:WIRD_BEHANDELT_IN]->(p)
+        WHERE "Onkologie" IN icd1.specialty
 
-                        
-        """
-        if icd_code:
-            clinic_query += """
-            ,i.name AS icd_name,
-            i.fallzahl AS icd_fallzahl
-            
-            """
-            
+        OPTIONAL MATCH (icd2:E_ICD)-[r2:WIRD_BEHANDELT_IN]->(p)
+        WHERE "Neurologie" IN icd2.specialty
 
-        print("&&&&&&&&&&&&&&&&&&&&&&clinic_query", clinic_query)
-        params = {"city": city}
-        if icd_code:
-            params["icd_code"] = icd_code
-        clinic_result = neo4j.run_query(clinic_query, params)
-        print("&&&&&&&&&&&&&&&&",params)
-        
-        for record in clinic_result:
-            results["clinics"].append({
-                "clinic_name": record.get("clinic_name"),
-                "clinic_identity": record.get("clinic_identity"),
-                "clinic_city": record.get("clinic_city"),
-                "clinic_address": record.get("clinic_address"),
-                "clinic_latitude": record.get("clinic_latitude"),
-                "clinic_longitude": record.get("clinic_longitude"),
-                "clinic_number_of_beds": record.get("clinic_number_of_beds")
+        WITH p, l,
+            SUM(COALESCE(r1.total, 0)) AS fallzahlOnkologie,
+            SUM(COALESCE(r2.total, 0)) AS fallzahlNeurologie
+
+        RETURN DISTINCT "Clinic" AS type,
+            l.lat AS lat, l.lon AS lon, p.name AS name, l.city AS city, l.address AS address,
+            p.number_of_bed AS number_of_bed, p.chefarzt AS chefarzt, p.specialty AS specialty, p.website AS website,
+            fallzahlOnkologie, fallzahlNeurologie, NULL AS total_icd_fallzahl, p.year AS year
+        '''
+
+        all_locations += run_query_if_enabled("Clinic", clinic_query, True)
+
+
+    if mvz:# MVZ (Medizinische Versorgungszentren)
+        # MVZ query with specialty filter
+        mvz_query = f'''
+        MATCH (p:MVZ)-[:HAS_LOCATION]->(l:Location)
+        WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL
+        {specialty_filter}
+        RETURN DISTINCT "MVZ" AS type, l.lat AS lat, l.lon AS lon, p.name AS name, l.city AS city, l.address AS address,
+               p.number_of_bed AS number_of_bed, p.chefarzt AS chefarzt, p.specialty AS specialty, p.website AS website,
+               NULL AS total_icd_fallzahl, p.fallzahlOnkologie AS fallzahlOnkologie, p.fallzahlNeurologie AS fallzahlNeurologie
+        '''
+        all_locations += run_query_if_enabled("MVZ", mvz_query, True)
+
+    if asv:# ASV (Ambulante spezialfachärztliche Versorgung)
+        # ASV query with specialty filter
+        asv_query = f'''
+        MATCH (p:ASV)-[:HAS_LOCATION]->(l:Location)
+        WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL
+        {specialty_filter}
+        RETURN DISTINCT "ASV" AS type, l.lat AS lat, l.lon AS lon, p.name AS name, l.city AS city, l.address AS address,
+               p.number_of_bed AS number_of_bed, p.chefarzt AS chefarzt, p.specialty AS specialty, p.website AS website,
+               NULL AS total_icd_fallzahl, p.fallzahlOnkologie AS fallzahlOnkologie, p.fallzahlNeurologie AS fallzahlNeurologie
+        '''
+        all_locations += run_query_if_enabled("ASV", asv_query, True)
+
+    if niedergelasseneArzt:# Niedergelassene Ärzte(Neurologen, Onkologen)
+        if onkologie:
+            onko_query = '''
+            MATCH (p:Onkologen)-[:HAS_LOCATION]->(l:Location)
+            WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL
+            RETURN DISTINCT "Onkologen" AS type, l.lat AS lat, l.lon AS lon, p.name AS name, l.city AS city, l.address AS address,
+                   p.number_of_bed AS number_of_bed, p.chefarzt AS chefarzt, p.specialty AS specialty, p.website AS website,
+                   NULL AS total_icd_fallzahl, p.fallzahlOnkologie AS fallzahlOnkologie, p.fallzahlNeurologie AS fallzahlNeurologie
+            '''
+            all_locations += run_query_if_enabled("Onkologen", onko_query, True)
+
+        if neurologie:
+            neuro_query = '''
+            MATCH (p:Neurologen)-[:HAS_LOCATION]->(l:Location)
+            WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL
+            RETURN DISTINCT "Neurologen" AS type, l.lat AS lat, l.lon AS lon, p.name AS name, l.city AS city, l.address AS address,
+                   p.number_of_bed AS number_of_bed, p.chefarzt AS chefarzt, p.specialty AS specialty, p.website AS website,
+                   NULL AS total_icd_fallzahl, p.fallzahlOnkologie AS fallzahlOnkologie, p.fallzahlNeurologie AS fallzahlNeurologie
+            '''
+            all_locations += run_query_if_enabled("Neurologen", neuro_query, True)
+
+    # Filter by radius
+    filtered_locations = calculate_within_radius(center, radius, all_locations)
+    selected_nodes = [{"name": loc["name"], "label": loc["type"]} for loc in filtered_locations if isinstance(loc.get("name"), str)]
+
+    coop_data = [] # Initialize cooperation data
+    # If cooperation is enabled, run the cooperation query
+    if cooperation and selected_nodes:
+        coop_query = '''
+        UNWIND $selected AS item
+        CALL {
+            WITH item
+            MATCH (a)
+            WHERE item.label IN labels(a) AND a.name = item.name
+            MATCH (a)-[:HAS_KOOPERIERT_MIT]->(b)-[:HAS_LOCATION]->(loc2:Location)
+            MATCH (a)-[:HAS_LOCATION]->(loc1:Location)
+            RETURN DISTINCT
+                a.name AS source_name, labels(a)[0] AS source_type, a.specialty AS source_specialty,
+                loc1.lat AS source_lat, loc1.lon AS source_lon,
+                b.name AS target_name, labels(b)[0] AS target_type, b.specialty AS target_specialty, b.address AS target_address,
+                b.city AS target_city, b.fallzahlOnkologie AS fallzahlOnkologie, b.fallzahlNeurologie AS fallzahlNeurologie, b.website AS website,
+                loc2.lat AS target_lat, loc2.lon AS target_lon
+        }
+        RETURN *
+        '''
+        coop_result = neo4j.run_query(coop_query, parameters={"selected": selected_nodes})
+        coop_data = [record.data() for record in coop_result]
+        for record in coop_data:
+            target_entry = {
+                "name": record["target_name"], "type": record["target_type"],
+                "lat": record["target_lat"], "lon": record["target_lon"],
+                "address": record["target_address"], "city": record["target_city"],
+                "specialty": record.get("target_specialty"),
+                "fallzahlOnkologie": record.get("fallzahlOnkologie"),
+                "fallzahlNeurologie": record.get("fallzahlNeurologie"),
+                "website": record.get("website"), "distance_km": None
+            }
+            already_exists = any(
+                loc["name"] == target_entry["name"] and loc["address"] == target_entry["address"]
+                for loc in filtered_locations)
+            if not already_exists:
+                filtered_locations.append(target_entry)
+    # Top ICD Codes
+    top_icds_data = [] # Initialize top ICD data
+    # If focus specialties are provided, run the top ICD query
+    if focus:
+        top_icd_query = f'''
+        MATCH (icd:E_ICD)
+        WHERE ANY(sp IN icd.specialty WHERE sp IN [{formatted_focus}])
+        RETURN icd.name AS code, icd.total_fallzahl AS total
+        ORDER BY total DESC
+        LIMIT 3
+        '''
+        result = neo4j.run_query(top_icd_query)
+        top_icds = [record.data() for record in result]
+
+        for item in top_icds:
+            code = item["code"]
+            name_entry = icd_names.get(code, {})
+            display_name = name_entry.get("common_term") or name_entry.get("name") or code
+            top_icds_data.append({
+                "code": code,
+                "total": item["total"],
+                "name": display_name
             })
-            if not results["icd"]:
-                results["icd"] = {
-                    "icd_name": record.get("icd_name"),
-                    "icd_fallzahl": record.get("icd_fallzahl")
-                }
 
-    # Query MVZ {name: $icd_code}
-    if mvz:
-        mvz_query = """
-        MATCH (i:ICD)-[:WIRD_BEHANDELT_IN]->(m:MVZ)
-        """
-        mvz_query += """
-        WHERE toLower(trim(m.city)) = toLower(trim($city))
-        """
-        if icd_code:
-            mvz_query += """
-            AND i.name = $icd_code
-            """
-        mvz_query += """
-        RETURN DISTINCT m.name AS mvz_name,
-                        m.city AS mvz_city,
-                        COALESCE(m.address, 'Unknown Address') AS mvz_address,
-                        m.schwerpunkte AS mvz_schwerpunkte,
-                        m.latitude AS mvz_latitude,
-                        m.longitude AS mvz_longitude
-        """
-        if icd_code:
-            mvz_query += """
-            ,i.name AS icd_name,
-            i.fallzahl AS icd_fallzahl
-            """
-        params = {"city": city}
-        if icd_code:
-            params["icd_code"] = icd_code
-        mvz_result = neo4j.run_query(mvz_query, params)
+    
 
-            
-        mvz_result = neo4j.run_query(mvz_query, {"icd_code": icd_code, "city": city})
-        for record in mvz_result:
-            results["mvz"].append({
-                "mvz_name": record.get("mvz_name"),
-                "mvz_city": record.get("mvz_city"),
-                "mvz_address": record.get("mvz_address"),
-                "mvz_schwerpunkte": record.get("mvz_schwerpunkte"),
-                "mvz_latitude": record.get("mvz_latitude"),
-                "mvz_longitude": record.get("mvz_longitude")
-            })
-            if not results["icd"]:
-                results["icd"] = {
-                    "icd_name": record.get("icd_name"),
-                    "icd_fallzahl": record.get("icd_fallzahl")
-                }
-
-    # Query Neurologen {name: $icd_code}
-    if neurologen:
-        neuro_query = """
-        MATCH (i:ICD )-[:WIRD_BEHANDELT_IN]->(n:Neurologen)
-        """
-        neuro_query += """
-        WHERE toLower(trim(n.city)) = toLower(trim($city))
-        """
-        if icd_code:
-            neuro_query += """
-            AND i.name = $icd_code
-            """
-        neuro_query += """
-        RETURN DISTINCT n.name AS neurologe_name,
-                        n.city AS neurologe_city,
-                        COALESCE(n.address, 'Unknown Address') AS neurologe_address,
-                        n.schwerpunkte AS neurologe_schwerpunkte,
-                        n.latitude AS neurologe_latitude,
-                        n.longitude AS neurologe_longitude
-        """
-        if icd_code:
-            neuro_query += """
-            ,i.name AS icd_name,
-            i.fallzahl AS icd_fallzahl
-            """
-        params = {"city": city}
-        if icd_code:
-            params["icd_code"] = icd_code
-        neuro_result = neo4j.run_query(neuro_query, params)
-        # neuro_result = neo4j.run_query(neuro_query, {"icd_code": icd_code, "city": city})
-        for record in neuro_result:
-            results["neurologen"].append({
-                "neurologe_name": record.get("neurologe_name"),
-                "neurologe_city": record.get("neurologe_city"),
-                "neurologe_address": record.get("neurologe_address"),
-                "neurologe_schwerpunkte": record.get("neurologe_schwerpunkte"),
-                "neurologe_latitude": record.get("neurologe_latitude"),
-                "neurologe_longitude": record.get("neurologe_longitude")
-            })
-            if not results["icd"]:
-                results["icd"] = {
-                    "icd_name": record.get("icd_name"),
-                    "icd_fallzahl": record.get("icd_fallzahl")
-                }
-    # Query Onkologen  {name: $icd_code}
-    if onkologen:
-        onko_query = """
-        MATCH (i:ICD)-[:WIRD_BEHANDELT_IN]->(o:Onkologen)
-        """
-        onko_query += """
-        WHERE toLower(trim(o.city)) = toLower(trim($city))
-        """
-        if icd_code:
-            onko_query += """
-            AND i.name = $icd_code
-            """
-        onko_query += """
-             
-        RETURN DISTINCT o.name AS onkologe_name,
-                        o.city AS onkologe_city,
-                        COALESCE(o.address, 'Unknown Address') AS onkologe_address,
-                        o.schwerpunkte AS onkologe_schwerpunkte,
-                        o.latitude AS onkologe_latitude,
-                        o.longitude AS onkologe_longitude
-        """
-        if icd_code:
-            onko_query += """
-            ,i.name AS icd_name,
-            i.fallzahl AS icd_fallzahl
-            """
-        params = {"city": city}
-        if icd_code:
-            params["icd_code"] = icd_code
-        onko_result = neo4j.run_query(onko_query, params)
-
-        #  onko_result = neo4j.run_query(onko_query, {"icd_code": icd_code, "city": city})
-        
-        onko_result = neo4j.run_query(onko_query, {"icd_code": icd_code, "city": city})
-        for record in onko_result:
-            results["onkologen"].append({
-                "onkologe_name": record.get("onkologe_name"),
-                "onkologe_city": record.get("onkologe_city"),
-                "onkologe_address": record.get("onkologe_address"),
-                "onkologe_schwerpunkte": record.get("onkologe_schwerpunkte"),
-                "onkologe_latitude": record.get("onkologe_latitude"),
-                "onkologe_longitude": record.get("onkologe_longitude")
-            })
-            if not results["icd"]:
-                results["icd"] = {
-                    "icd_name": record.get("icd_name"),
-                    "icd_fallzahl": record.get("icd_fallzahl")
-                }
-
-    # Query ASV  {name: $icd_code}
-    if asv:
-        asv_query = """
-        MATCH (i:ICD)-[:WIRD_BEHANDELT_IN]->(a:ASV)
-        """
-        asv_query += """
-        WHERE toLower(trim(a.city)) = toLower(trim($city))
-        """
-        if icd_code:
-            asv_query += """
-            AND i.name = $icd_code
-            """
-        asv_query += """
-        RETURN DISTINCT a.name AS asv_name,
-                        a.city AS asv_city,
-                        COALESCE(a.address, 'Unknown Address') AS asv_address,
-                        a.schwerpunkte AS asv_schwerpunkte,
-                        a.latitude AS asv_latitude,
-                        a.longitude AS asv_longitude
-        """
-        if icd_code:
-            asv_query += """
-            ,i.name AS icd_name,
-            i.fallzahl AS icd_fallzahl
-            """
-        params = {"city": city}
-        if icd_code:
-            params["icd_code"] = icd_code
-        asv_result = neo4j.run_query(asv_query, params)
-        #  asv_result = neo4j.run_query(asv_query, {"icd_code": icd_code, "city": city})
-        asv_result = neo4j.run_query(asv_query, {"icd_code": icd_code, "city": city})
-        for record in asv_result:
-            results["asv"].append({
-                "asv_name": record.get("asv_name"),
-                "asv_city": record.get("asv_city"),
-                "asv_address": record.get("asv_address"),
-                "asv_schwerpunkte": record.get("asv_schwerpunkte"),
-                "asv_latitude": record.get("asv_latitude"),
-                "asv_longitude": record.get("asv_longitude")
-            })
-            if not results["icd"]:
-                results["icd"] = {
-                    "icd_name": record.get("icd_name"),
-                    "icd_fallzahl": record.get("icd_fallzahl")
-                }
-
-
-# ✅ Return full results
-    return jsonify(results), 200
+    return jsonify({"providers": filtered_locations, "cooperations": coop_data,
+                     "center": {"lat": center[0], "lon": center[1]}, "top_icds": top_icds_data})
 
