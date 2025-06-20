@@ -1,4 +1,4 @@
-# 🧠 Healthcare Analytics & Knowledge Map (Neo4j + Flask + React)
+# 🧠 New ways of providing care and analyzing patient flows with knowledge maps, knowledge extraction (Neo4j + Flask + React)
 
 ## 📌 Overview
 This project is a **React-based web application** powered by a **Flask backend** and **Neo4j graph database** for analyzing and visualizing healthcare infrastructure in Germany.
