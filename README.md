@@ -5,10 +5,10 @@ This project is a **React-based web application** powered by a **Flask backend**
 
 The application allows users to:
 
-✅ Search for **clinics, MVZ, ASV, Neurologists, and Oncologists** by **city**, **radius**, and **ICD-10 codes**  
+✅ Search for **clinics, MVZ, ASV, Neurologists, and Oncologists** by **city** and **radius**  
 ✅ See the results **on an interactive map**  
 ✅ Calculate **road distances** to providers  
-✅ View analytics including **ICD distributions, provider details, and accessibility**
+✅ View analytics including **ICD distributions, provider details, and accessibility** and ...
 
 ---
 
