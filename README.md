@@ -86,4 +86,8 @@ git commit -m "🔧 Added ICD support + refined analytics"
 git pull origin main
 git push origin main
 
+![App](https://github.com/user-attachments/assets/ba29bfde-d657-426d-970f-80e17e490fbf)
+
+
+
 
